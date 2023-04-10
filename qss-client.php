@@ -12,31 +12,34 @@ class QSS_Client {
     }
 
     private function request_token() {
-        $url = self::API_BASE_URL . '/login_check';
+    $url = self::API_BASE_URL . '/login_check';
 
-        $response = wp_remote_post( $url, array(
-            'headers' => array(
-                'Content-Type' => 'application/json',
-            ),
-            'body' => json_encode( array(
-                '_username' => $this->email,
-                '_password' => $this->password,
-            ) ),
-        ) );
+    $response = wp_remote_post( $url, array(
+        'headers' => array(
+            'Content-Type' => 'application/json',
+        ),
+        'body' => json_encode( array(
+            '_username' => $this->email,
+            '_password' => $this->password,
+        ) ),
+    ) );
 
-        if ( is_wp_error( $response ) ) {
-            throw new Exception( 'Failed to retrieve token: ' . $response->get_error_message() );
-        }
-
-        $data = json_decode( wp_remote_retrieve_body( $response ) );
-
-        if ( empty( $data->token ) ) {
-            throw new Exception( 'Failed to retrieve token: invalid response from server.' );
-        }
-
-        $this->token = $data->token;
+    if ( is_wp_error( $response ) ) {
+        throw new Exception( 'Failed to retrieve token: ' . $response->get_error_message() );
     }
 
+    $data = json_decode( wp_remote_retrieve_body( $response ) );
+
+    if ( empty( $data->token ) ) {
+        throw new Exception( 'Failed to retrieve token: invalid response from server.' );
+    }
+
+    $this->token = $data->token;
+
+    // Set the token as a cookie
+    setcookie( 'qss_token', $this->token, time() + 3600, '/' );
+    }
+    
     public function get( $path, $args = array() ) {
         if ( ! $this->token ) {
             $this->request_token();
